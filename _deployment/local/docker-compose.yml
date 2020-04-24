@@ -1,0 +1,56 @@
+version: '2.4'
+services:
+  api:
+    build:
+      context: ../../.
+      args:
+        - PROD=0
+    mem_limit: 256m
+    restart: always
+    command: npm run start:dev
+    environment:
+      - NODE_ENV=development
+      - PROJECT_NAME=test
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=3000
+      - NODE_LOG=on
+      - DEBUG=app*
+      - DATABASE_NAME=test
+      - DATABASE_PROTOCOL=mongodb
+      - DATABASE=mongo:27017
+      - JWT_SECRET=test
+      - JWT_AUDIENCE=test
+      - JWT_ISSUER=test
+      - MONGO_ROOT_USERNAME=root
+      - MONGO_ROOT_PASSWORD=root
+      - SEND_EMAIL=on
+      
+    ports:
+      - 3000:3000
+      - 9229:9229
+    volumes:
+      - ../../src:/var/www/html/src
+    depends_on:
+      - mongo
+    networks:
+      - common
+
+  mongo:
+    image: mongo:4.2.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    volumes:
+      - ../../volumes/local/mongo:/data/db
+    ports:
+      - 27017:27017
+    networks:
+      - common
+
+volumes:
+  mongo:
+    driver: local
+networks:
+  common:
+    external:
+      name: common
