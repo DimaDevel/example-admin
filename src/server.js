@@ -1,49 +1,51 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const AdminBro = require('admin-bro');
-const AdminBroExpress = require('admin-bro-expressjs');
-const AdminBroMongoose = require('admin-bro-mongoose');
+const { default: AdminBro } = require('admin-bro');
 const formidableMiddleware = require('express-formidable');
 const User = require('./models/User');
+const options = require('./admin-bro/admin-bro-option');
+const buildAdminRouter = require('./admin-bro/admin-bro-router');
+const connect = require('./db/db');
 
 const asyncHandler = require('express-async-handler');
 
 const app = express();
+const port = 3000;
 
-// Admin Bro init
-AdminBro.registerAdapter(AdminBroMongoose);
+const run = async () => {
+  // app.use(formidableMiddleware());
 
-const adminBro = new AdminBro({
-  resources: [User],
-  rootPath: '/admin',
-  branding: {
-    companyName: 'Company',
-  }
-});
+  // middleware init
+  // app.use(cors());
+  // app.use(bodyParser.json());
+  // app.use(bodyParser.urlencoded({ extended: true }));
 
-const routerAdminBro = AdminBroExpress.buildRouter(adminBro);
-app.use(adminBro.options.rootPath, routerAdminBro);
-app.use(formidableMiddleware());
+  // init start page
+  app.get(
+    '/',
+    asyncHandler(async (req, res) => res.json('Welcome to test API!'))
+  );
 
-// middleware init
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+ 
 
-// init start page
-app.get(
-  '/',
-  asyncHandler(async (req, res) => res.json('Welcome to test API!'))
-);
+  await connect();
 
-// throw error if path not found
-app.use(
-  asyncHandler(async (req, res) => {
-    res.status(404).json({
-      message: `Cannot ${req.method} ${req.path}`
-    });
-  })
-);
+  const admin = new AdminBro(options);
+  const router = buildAdminRouter(admin);
+  app.use(admin.options.rootPath, router);
 
-module.exports = { app };
+   // throw error if path not found
+   app.use(
+    asyncHandler(async (req, res) => {
+      res.status(404).json({
+        message: `Cannot ${req.method} ${req.path}`
+      });
+    })
+  ); 
+  app.listen(port, () => {
+    console.log(`Started on port ${port}`);
+  });
+};
+
+module.exports = run;
